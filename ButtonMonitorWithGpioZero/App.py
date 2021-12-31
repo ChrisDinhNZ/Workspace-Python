@@ -4,10 +4,15 @@ Description: Monitors button/switch connected to GPIO input 2 and 3.
 import asyncio
 import sys
 import signal
+import logging
+from time import gmtime
 
 from ButtonMonitor import ButtonMonitor
 from ButtonObserver import ButtonObserver
 from AzureIotDeviceAgent import AzureIotDeviceAgent
+
+logging.basicConfig(filename='events.log', encoding='utf-8', format='%(asctime)s %(message)s', level=logging.DEBUG)
+logging.Formatter.converter = gmtime
 
 async def main():
 
@@ -22,13 +27,13 @@ async def main():
         execution_is_over.set_result("Ctrl+C")
         if my_home_agent is not None:
             my_home_agent.disconnect() # Todo: this will result in "never awaited" error
-        print("")
-        print("Cleaning up before exiting...")
+        logging.info("Cleaning up before exiting...")
         sys.exit(0)
 
     signal.signal(signal.SIGINT, abort_handler)
 
     try:
+        logging.info("Started...")
         observer = ButtonObserver()
         ButtonMonitor(2, "A", observer)  # Monitor button connected to input 2
         ButtonMonitor(3, "B", observer)  # Monitor button connected to input 3
@@ -40,10 +45,10 @@ async def main():
         my_home_agent.set_client(observer)
 
         exit_reason = await execution_is_over
-        print('Exit reason detected: %r' % exit_reason)
+        logging.info('Exit reason detected: %r' % exit_reason)
 
-    finally:
-        pass
+    except Exception:
+        logging.error("Stopped!")
 
 if __name__ == "__main__":
     asyncio.get_event_loop().run_until_complete(main())
