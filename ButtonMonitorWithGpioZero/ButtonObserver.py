@@ -29,9 +29,9 @@ class ButtonObserver:
       # as SerializeToString() returns a byte array.
       # e.g. parcel.content = str(content.SerializeToString(), 'utf-8')
       if assistance_requested:
-         parcel.content = "Assistance requested"
+         parcel.content = "Panic button activated"
       else:
-         parcel.content = "Assistance request cancelled"
+         parcel.content = "Panic button cancelled"
 
       return parcel
 
