@@ -27,4 +27,5 @@ class AzureIotDeviceAgent:
       parcel.source.domain = "Device Domain"
       parcel = parcel.SerializeToString()
 
+      # Note that parcel here is serialised to a byte array, not UTF8 string.
       await self.device_client.send_message(parcel)
