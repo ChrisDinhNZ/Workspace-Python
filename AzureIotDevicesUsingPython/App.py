@@ -3,54 +3,66 @@ Description: An example of 2 "devices" communicating via Azure IoT Hub
 '''
 import asyncio
 import os
-import sys
-import signal
 import logging
-import threading
+import sys
 from time import gmtime
 
 from AlarmAgent import AlarmAgent
 from AlarmMonitorAgent import AlarmMonitorAgent
 
+REQUIRED_DEVICES = 2
+
 logging.basicConfig(filename='events.log', encoding='utf-8', format='%(asctime)s %(message)s', level=logging.DEBUG)
 logging.Formatter.converter = gmtime
 
+def all_devices_are_connected(devices):
+    return len(devices) == REQUIRED_DEVICES
+
+async def disconnect_devices(devices):
+    coroutines = []
+    for device in devices:
+        coroutines.append(device.disconnect())
+    await asyncio.gather(*coroutines)
+
 async def main():
 
-    execution_is_over = asyncio.Future()
+    alarm_agent = None
+    alarm_monitor_agent = None
 
-    def abort_handler(*args):
-        execution_is_over.set_result("Ctrl+C")
-        logging.info('App Stopped.')
-        sys.exit(0)
-
-    signal.signal(signal.SIGINT, abort_handler)
+    connected_devices = []
 
     try:
         logging.info("App Started...")
 
-        # Read necessary configuration data from environment variables
+        # Get neccessary application configs
         alarm_agent_conn_str = os.getenv("AlarmAgentConnectionString")
         alarm_monitor_agent_conn_str = os.getenv("AlarmMonitorAgentConnectionString")
         alarm_agent_name = os.getenv("SourceName")
         alarm_monitor_agent_name = os.getenv("DestinationName")
 
-        logging.info('SourceName: %r' % alarm_agent_name)
-
-        # Get Alarm Agent up and running
+        # Connect our devices to IoT hub
         alarm_agent = AlarmAgent(alarm_agent_conn_str, alarm_agent_name, alarm_monitor_agent_name, logging)
-        alarm_agent_worker = threading.Thread(target=alarm_agent.start_work)
-        alarm_agent_worker.daemon = True
-        alarm_agent_worker.start()
-
-        # Get Alarm Monitor Agent up and running
         alarm_monitor_agent = AlarmMonitorAgent(alarm_monitor_agent_conn_str, alarm_monitor_agent_name, logging)
-        alarm_monitor_agent_worker = threading.Thread(target=alarm_monitor_agent.start_work)
-        alarm_monitor_agent_worker.daemon = True
-        alarm_monitor_agent_worker.start()
+        await asyncio.gather(alarm_agent.connect(), alarm_monitor_agent.connect())
 
-        exit_reason = await execution_is_over
+        if alarm_agent.is_connected():
+            connected_devices.append(alarm_agent)
 
+        if alarm_monitor_agent.is_connected():
+            connected_devices.append(alarm_monitor_agent)
+
+        if all_devices_are_connected(connected_devices) is False:
+            await disconnect_devices(connected_devices)
+            logging.error("Failed to connect necessary devices.")
+            sys.exit()
+
+        logging.info("All devices are connected.")
+        await asyncio.sleep(5)
+
+        # Nothing else to do, clean up as required.
+        await disconnect_devices(connected_devices)
+
+        logging.info("App Stopped!")
     except Exception:
         logging.error(Exception.with_traceback())
 

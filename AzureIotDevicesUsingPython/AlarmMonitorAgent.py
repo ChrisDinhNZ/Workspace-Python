@@ -1,8 +1,5 @@
-class AlarmMonitorAgent:
-    def __init__(self, conn_str, agent_name, logging):
-        self.conn_str = conn_str
-        self.agent_name = agent_name
-        self.logging = logging
+from DeviceAgent import DeviceAgent
 
-    def start_work(self):
-        self.logging.info("AlarmMonitorAgent Started...")
+class AlarmMonitorAgent(DeviceAgent):
+    def __init__(self, conn_str, agent_name, logging):
+        super(AlarmMonitorAgent, self).__init__(conn_str, agent_name, logging)
