@@ -6,6 +6,7 @@ import os
 import logging
 import sys
 from time import gmtime
+import time
 
 from AlarmAgent import AlarmAgent
 from AlarmMonitorAgent import AlarmMonitorAgent
@@ -32,13 +33,13 @@ async def main():
     connected_devices = []
 
     try:
-        logging.info("App Started...")
+        logging.info("*** App Started...")
 
         # Get neccessary application configs
         alarm_agent_conn_str = os.getenv("AlarmAgentConnectionString")
         alarm_monitor_agent_conn_str = os.getenv("AlarmMonitorAgentConnectionString")
-        alarm_agent_name = os.getenv("SourceName")
-        alarm_monitor_agent_name = os.getenv("DestinationName")
+        alarm_agent_name = os.getenv("AlarmAgentName")
+        alarm_monitor_agent_name = os.getenv("AlarmMonitorAgentName")
 
         # Connect our devices to IoT hub
         alarm_agent = AlarmAgent(alarm_agent_conn_str, alarm_agent_name, alarm_monitor_agent_name, logging)
@@ -57,7 +58,14 @@ async def main():
             sys.exit()
 
         logging.info("All devices are connected.")
-        await asyncio.sleep(5)
+
+        start_time = time.time()
+
+        while True:
+            await alarm_agent.do_work()
+
+            if (time.time() - start_time) > 1:
+                break
 
         # Nothing else to do, clean up as required.
         await disconnect_devices(connected_devices)
