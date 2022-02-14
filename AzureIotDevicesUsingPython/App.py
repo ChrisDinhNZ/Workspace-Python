@@ -13,7 +13,7 @@ from AlarmMonitorAgent import AlarmMonitorAgent
 
 REQUIRED_DEVICES = 2
 
-logging.basicConfig(filename='events.log', encoding='utf-8', format='%(asctime)s %(message)s', level=logging.DEBUG)
+logging.basicConfig(filename='events.log', encoding='utf-8', format='%(asctime)s %(message)s', level=logging.INFO)
 logging.Formatter.converter = gmtime
 
 def all_devices_are_connected(devices):
@@ -58,16 +58,17 @@ async def main():
             sys.exit()
 
         logging.info("All devices are connected.")
-
         start_time = time.time()
 
         while True:
             await alarm_agent.do_work()
 
-            if (time.time() - start_time) > 1:
+            # Let alarm agent runs for 5 sec
+            if (time.time() - start_time) > 5:
                 break
 
-        # Nothing else to do, clean up as required.
+        # Give alarm monitor some time before cleaning up connections.
+        await asyncio.sleep(5)
         await disconnect_devices(connected_devices)
 
         logging.info("App Stopped!")

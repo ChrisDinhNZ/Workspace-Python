@@ -1,3 +1,4 @@
+import asyncio
 import random
 from datetime import datetime, timezone
 
@@ -18,12 +19,15 @@ class AlarmAgent(DeviceAgent):
         return bool(random.getrandbits(1))
 
     def pack_alarm_event(self):
-        self.logging.info("Packing event: %r" % self.current_alarm_status)
         date_time_utc = datetime.now(timezone.utc)
         alarm_status = pb_AlarmStatus()
         alarm_status.alarm_active = self.current_alarm_status
         alarm_status.time_utc = "{}".format(date_time_utc.time())
         alarm_status.date_utc = "{}".format(date_time_utc.date())
+
+        self.logging.info("*************************************************************************")
+        self.logging.info("Packing event: Active: %r, time: %r, date: %r" % (alarm_status.alarm_active, alarm_status.time_utc, alarm_status.date_utc))
+        self.logging.info("*************************************************************************")
 
         parcel = pb_Parcel()
         parcel.source.name = "Door Alarm"
@@ -53,6 +57,7 @@ class AlarmAgent(DeviceAgent):
 
         if self.state is DeviceAgentState.PROCESSING_DEVICE_TO_CLOUD_STARTED:
             await self.send_parcel(self.parcel_to_send)
+            await asyncio.sleep(0.5) # Delayed for test
             self.parcel_to_send = None
             self.state = DeviceAgentState.PROCESSING_DEVICE_TO_CLOUD_COMPLETED
             return
