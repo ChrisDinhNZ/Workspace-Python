@@ -13,8 +13,13 @@ from AlarmMonitorAgent import AlarmMonitorAgent
 
 REQUIRED_DEVICES = 2
 
-logging.basicConfig(filename='events.log', encoding='utf-8', format='%(asctime)s %(message)s', level=logging.INFO)
-logging.Formatter.converter = gmtime
+root_logger= logging.getLogger()
+root_logger.setLevel(logging.DEBUG)
+handler = logging.FileHandler('events.log', 'w', 'utf-8')
+formatter = logging.Formatter('%(asctime)s %(message)s')
+formatter.converter = gmtime
+handler.setFormatter(formatter)
+root_logger.addHandler(handler)
 
 def all_devices_are_connected(devices):
     return len(devices) == REQUIRED_DEVICES
