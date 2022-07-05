@@ -2,7 +2,6 @@
 Description: A helper class to interact with Azure IoT Hub.
 '''
 
-import asyncio
 from pb_Parcel_pb2 import pb_Parcel
 from azure.iot.device.aio import IoTHubDeviceClient
 
@@ -13,15 +12,24 @@ class AzureIotDeviceAgent:
       self.client = client
 
    async def connect(self):
+      if self.device_client.connected:
+         return
+
       await self.device_client.connect()
 
    async def disconnect(self):
+      if not self.device_client.connected:
+         return
+
       await self.device_client.disconnect()
 
    def set_client(self, client):
       self.client = client
 
-   async def send_parcel(self, parcel):
+   async def send_parcel(self, parcel: pb_Parcel):
+      if not self.device_client.connected:
+         return
+
       # Populate source domain and domain agent
       parcel.source.domain_agent = self.name
       parcel.source.domain = "Device Domain"
